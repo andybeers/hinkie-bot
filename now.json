@@ -1,0 +1,5 @@
+{
+  "version": 2,
+  "routes": [{ "src": "score.js", "methods": ["POST", "GET"] }],
+  "builds": [{ "src": "score.js", "use": "@now/node" }]
+}

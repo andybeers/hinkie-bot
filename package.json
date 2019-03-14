@@ -16,5 +16,11 @@
   "bugs": {
     "url": "https://github.com/andybeers/hinkie-bot/issues"
   },
-  "homepage": "https://github.com/andybeers/hinkie-bot#readme"
+  "homepage": "https://github.com/andybeers/hinkie-bot#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^5.15.1",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.16.0"
+  }
 }
