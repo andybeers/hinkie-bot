@@ -1,5 +1,6 @@
 'use-strict'
-const url = require('url')
+
+const { parse } = require('querystring')
 const axios = require('axios')
 
 const teamIdMap = {
@@ -11,15 +12,36 @@ const teamIdMap = {
   test: 7,
 }
 
-module.exports = (req, res) => {
-  const { query } = url.parse(req.url, true)
-  const { team = 'sixers' } = query
-  const teamId = teamIdMap[team] || 23
+const baseApiUrl = 'https://www.balldontlie.io/api/v1'
 
-  const apiUrl = `https://www.balldontlie.io/api/v1/games?team_ids[]=${teamId}&dates[]=2019-03-14`
+// Promise-wrapped body-parsing function
+function bodyParser(request) {
+  const FORM_URLENCODED = 'application/x-www-form-urlencoded'
+
+  return new Promise((res, rej) => {
+    if (request.headers['content-type'] === FORM_URLENCODED) {
+      let body = ''
+      request.on('data', chunk => {
+        body += chunk.toString()
+      })
+      request.on('end', () => {
+        res(parse(body))
+      })
+    } else {
+      rej(new Error('Wrong content-type'))
+    }
+  })
+}
+
+module.exports = async (req, res) => {
+  const { text } = await bodyParser(req)
+  const requestTeam = text.split(' ')[0]
+  const teamId = teamIdMap[requestTeam] || 23
+
+  const endpoint = `${baseApiUrl}/games?team_ids[]=${teamId}&dates[]=2019-03-14`
 
   axios
-    .get(apiUrl)
+    .get(endpoint)
     .then(({ data }) => {
       if (!data || !data.data || !data.data.length) {
         return res.end('No game found')
@@ -33,11 +55,16 @@ module.exports = (req, res) => {
         visitor_team_score,
       } = gamesArray[0]
 
-      res.end(
-        `The score is: ${home_team.name}: ${home_team_score} -- ${
+      const responseObj = {
+        response_type: 'in_channel',
+        text: `The score is: ${home_team.name}: ${home_team_score} -- ${
           visitor_team.name
         }: ${visitor_team_score}`,
-      )
+        attachments: [{ text: 'Game is over' }],
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      return res.end(JSON.stringify(responseObj))
     })
     .catch(() => res.end('We goofed'))
 }
